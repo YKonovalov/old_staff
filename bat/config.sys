@@ -1,0 +1,63 @@
+[MENU]
+menucolor 15,1
+menuitem=WIN, Windows
+menuitem=NONET, No Network
+menuitem=CDROM, CD-ROM Drive
+menuitem=NETX, NETX Shell
+menudefault=WIN,5
+ 
+[WIN]
+SET CONFIG=WIN
+DEVICE=C:\QEMM\DOSDATA.SYS
+set loadhidata=C:\QEMM\LOADHI.RF
+device=C:\QEMM\QEMM386.SYS RAM ST:M RF
+device=c:\qemm\dos-up.sys @c:\qemm\dos-up.dat
+device=c:\qemm\loadhi.sys /rf C:\DOS\ANSI.SYS
+REM device=c:\qemm\loadhi.sys /rf c:\windows\ifshlp.sys
+rem device=c:\qemm\loadhi.sys /rf c:\dos\CR_ATAPI.sys /D:$CDROM$
+DOS=HIGH,UMB
+FILES=150
+BUFFERS=20
+REM STACKS=9,256
+lastdrive=z
+ 
+[NETX]
+SET CONFIG=NETX
+DEVICE=C:\QEMM\DOSDATA.SYS
+SET LOADHIDATA=C:\QEMM\LOADHI.RF
+DEVICE=C:\QEMM\QEMM386.SYS RAM ST:M rf
+device=c:\qemm\dos-up.sys @c:\qemm\dos-up.dat
+device=c:\qemm\loadhi.sys /rf C:\DOS\ANSI.SYS
+DOS=HIGH,UMB
+FILES=100
+BUFFERS=20
+REM STACKS=9,256
+ 
+[CDROM]
+SET CONFIG=CDROM
+DEVICE=C:\QEMM\DOSDATA.SYS
+SET LOADHIDATA=C:\QEMM\LOADHI.RF
+DEVICE=C:\QEMM\QEMM386.SYS RAM ST:M rf
+device=c:\qemm\dos-up.sys @c:\qemm\dos-up.dat
+device=C:\DOS\ANSI.SYS
+REM device=c:\qemm\loadhi.sys /rf c:\windows\ifshlp.sys
+device=c:\qemm\loadhi.sys /rf c:\dos\CR_ATAPI.sys /D:$CDROM$
+DOS=HIGH,UMB
+FILES=100
+BUFFERS=20
+REM STACKS=9,256
+lastdrive=z
+ 
+[NONET]
+SET CONFIG=NONET
+DEVICE=C:\QEMM\DOSDATA.SYS
+SET LOADHIDATA=C:\QEMM\LOADHI.RF
+DEVICE=C:\QEMM\QEMM386.SYS RAM ST:F RF
+device=c:\qemm\dos-up.sys @c:\qemm\dos-up.dat
+DOS=HIGH,UMB
+FILES=100
+BUFFERS=20
+STACKS=9,256
+ 
+[common]
+SHELL=C:\QEMM\LOADHI.COM /RF C:\COMMAND.COM C:\ /P /E:1024

@@ -1,0 +1,10 @@
+open 194.87.137.46
+bmuser
+?prikol
+cd bpbranch
+ascii
+hash on
+get mcfa0500.dat mcfa0500.dat
+get mcfc0500.dat mcfc0500.dat
+bye
+

@@ -1,0 +1,692 @@
+Unit Fields;
+Interface
+uses dos,crt,graph,YK_Fonts,Controls,Menus,space_u,pictures,SyFields;
+const FGTB_Header='█ Файл таблицы выборки GAIL 1.0';
+const CLEAN:real=-2.9e-39 {1.7e38};
+      Step:integer=3;
+      Prompt:string='Modifying Item : ';
+      DefTabFile='noname.gtb';
+      TabMaxX=12;
+      TabMaxY=60;
+const
+ LoadPCX=66;
+ LoadGEK=67;
+ LoadSX=68;
+ SaveTable=69;
+ LoadTable=70;
+ ClearTable=71;
+ SaveTableAs=72;
+
+var
+ CurrTabFile:Pathstr;
+ TableExCode:integer;
+
+BorisFN:pathstr;
+
+Type TabType=array[1..TabMaxX,1..TabMaxY]of Real;
+     TabFileType=record
+                   head:string;
+                   T:TabType;
+                 end;
+
+var Tab:TabType;
+    Res:array[1..100,1..8]of Real;
+
+Procedure GistField(WinToRD:WinType;mode :byte;wp:PoRestList);far;
+Procedure TableField(WinToRD:WinType;mode :byte;wp:PoRestList);far;
+Procedure ResultField(WinToRD:WinType;mode :byte;wp:PoRestList);far;
+Procedure MainField(WinToRD:WinType;mode :byte;wp:PoRestList);far;
+Procedure BorisField(WinToRD:WinType;mode :byte;wp:PoRestList);far;
+
+Implementation
+var
+    BorisMethod:byte;
+    bix,biy:word;
+{--------------------------------------------}
+Procedure GistField(WinToRD:WinType;mode :byte;wp:PoRestList);
+begin
+ YK_setcolor(0);
+end;
+{--------------------------------------------}
+Procedure InitMain(mode:integer);
+var OfsX,OfsY:Integer;
+begin
+ With Pad.Field do
+ begin
+ if mode=Init then
+  begin
+   Wx:=0;
+   Wy:=0;
+  Length:=15000;
+  Width:=20000;
+  end;
+ end;
+end;
+{--------------------------------------------}
+Procedure RedrawMain(win:WinType);
+var OfsX,OfsY:Integer;
+  F:Text;
+  s:string;
+  i:word;
+begin
+ Hide;
+   DrawFieldBG(win);
+ YK_Setviewport(win,True);
+ With Pad.Field do
+ begin
+  OfsX:=FWin[1]-Wx;
+  OfsY:=Fwin[2]-Wy;
+  assing(F,'test.txt')
+  reset(F);
+  i:=0;
+  repeat
+   readln(F,s);inc(i);
+   YK_OutTextXY(wx+Qx,wy+i*Qy,s);
+  until eof(F);
+ end;
+ YK_Setviewport(FullScreen,True);
+ Show;
+end;
+{--------------------------------------------}
+Procedure MainField(WinToRD:WinType;mode :byte; wp:PoRestList);
+ var c,ch:char;
+     e:integer;
+     win:Wintype;
+begin
+ YK_setcolor(0);
+ if mode in [Init,ReInit] Then InitMain(mode) else
+ if mode=Redraw Then RedrawMain(WinToRD) else
+ if (mode=RedrawList)and(wp<>Nil) Then
+      For e:=1 To wp^.MaxPos do
+       begin
+        wp^.seek(e);wp^.Get(win);
+        RedrawMain(win);
+       end else
+ If mode=Comm  then
+                 case PadCommand.move.com of
+                 left : c:=#75;
+                 Right: c:=#77;
+                 Up:    c:=#72;
+                 Down:  C:=#80;
+                 end;
+ if mode=Event then c:=FullKey(ch,0);
+ If mode in [Event,Comm] then
+  begin
+   if c in [#75,#77,#80,#72] then
+   with Pad.Field do
+   begin
+    Owy:=wy;Owx:=wx;
+    if (c=#80)and(Wy+Fwin[4]-FWin[2]+Qy<=Width) Then inc(Wy,Qy);
+    if (c=#72)and(Wy-Qy>0) Then dec(Wy,Qy);
+    if (c=#77)and(Wx+Fwin[3]-FWin[1]+Qx div 2<Length)Then inc(Wx,Qx div 2);
+    if (c=#75)and(Wx-Qx div 2>0) Then dec(Wx,Qx div 2);
+    if (Owx<>wx)or(Owy<>wy)then RedrawMain(FWin);
+   end;
+  end;
+end;
+{-------------------------------------------}
+Procedure InitTable(mode:integer);
+var OfsX,OfsY,i,j:Integer;
+begin
+ With Pad.Field do
+ begin
+ if mode=Init then
+  begin
+   Wx:=0;
+   Wy:=0;
+   OWx:=0;
+   OWy:=0;
+   Wpx:=1;
+   Wpy:=1;
+   OWpx:=1;
+   OWpy:=1;
+  Length:=(TabMaxX-1)*Step*Qx;
+  Width:=(TabMaxY-1)*Qy;
+   For i:=1 to TabMaxX do
+    For j:=1 to TabMaxY do
+      Tab[i,j]:=CLEAN;
+
+   Pad.Headline:=Pad.headline+DefTabFile;
+   CurrTabFile:=DefTabFile;
+  end;
+ end;
+end;
+{-------------------------------------------}
+Procedure ClearTab;
+var OfsX,OfsY,i,j:Integer;
+begin
+ With Pad.Field do
+ begin
+   Wx:=0;
+   Wy:=0;
+   OWx:=0;
+   OWy:=0;
+   Wpx:=1;
+   Wpy:=1;
+   OWpx:=1;
+   OWpy:=1;
+  Length:=(TabMaxX-1)*Step*Qx;
+  Width:=(TabMaxY-1)*Qy;
+   For i:=1 to TabMaxX do
+    For j:=1 to TabMaxY do
+      Tab[i,j]:=CLEAN;
+ end;
+end;
+{-------------------------------------------}
+function FileExists(FileName: String): Boolean;
+{ Boolean function that returns True if the file exists;otherwise,
+ it returns False. Closes the file if it exists. }
+var
+ F: file;
+begin
+ {$I-}
+ Assign(F, FileName);
+ FileMode := 0;  { Set file access to read only }
+ Reset(F);
+ System.Close(F);
+ {$I+}
+ FileExists := (IOResult = 0) and (FileName <> '');
+end;  { FileExists }
+{--------------------------------------------------}
+Function SaveTab(fn:pathstr):boolean;
+var
+    F:File of TabFileType;
+    wq:TabFileType;
+    s:string;
+begin
+ SaveTab:=True;
+ Assign(F,fn);
+ {$I-}
+ Rewrite(F);
+if IOResult <>0 then begin SaveTab:=False;System.Close(F);exit; end;
+
+ wq.head:=FGTB_Header;
+ wq.T:=Tab;
+ Write(F,wq);
+if IOResult <>0 then begin SaveTab:=False;System.Close(F);exit; end;
+ {$I+}
+ System.Close(F);
+end;
+{-------------------------------------------}
+Function LoadTab(fn:pathstr):boolean;
+var
+    F:File of TabFileType;
+    wq:TabFileType;
+begin
+ LoadTab:=True;
+ Assign(F,fn);
+ {$I-}
+ Reset(F);
+ if IOResult <>0 then begin LoadTab:=False;exit; end;
+ Read(F,wq);
+ if (IOResult <>0)or (wq.head<>FGTB_Header) then
+   begin LoadTab:=False;System.Close(F);exit; end;
+ Tab:=wq.T;
+ {$I+}
+ System.Close(F);
+end;
+{--------------------------------------------}
+Procedure DrawCell(i,j,col,Bcol:byte);
+var x,y:integer;
+Begin
+  Tx:=Pad.Field.wx div (Step*Qx);
+  Ty:=Pad.Field.wy div (Qy);
+ setFillstyle(1,Bcol);
+ YK_SetColor(Col);
+  x:=FWin[1]+(i-1)*Step*Qx;
+  y:=FWin[2]+(j-1)*Qy;
+  YK_bar(x+1,y+1,x+Step*Qx-1,y+Qy-1);
+    if Tab[Tx+i,Ty+j]<>CLEAN then
+    begin
+    str(Tab[Tx+i,Ty+j]:5:2,S);
+    optstr(s);
+    If YK_TextWidth(s)>Step*Qx-2 then
+       begin
+        s:=copy(s,1,(Step*Qx-2)div YK_TextWidth('A')-1);
+        s:=s+#16;
+       end;
+    YK_OutTextXY(x+(Step*Qx) div 2,
+                 y+Qy div 2+1,S);
+    end;
+End;
+{--------------------------------------------}
+Procedure FindNewWP(X,Y:integer);
+Begin
+  wpx:=(X-Fwin[1])div (Step*Qx)+1;
+  wpy:=(Y-Fwin[2])div (Qy)+1;
+End;
+{--------------------------------------------}
+Procedure RedrawTable(win:WinType);
+var wn:WinType;
+begin
+ Hide;
+  DrawFieldBG(win);
+ wn:=Fwin;
+{ inc(wn[1]);inc(wn[2]);}dec(wn[3]);dec(wn[4]);
+ w[1]:=0;w[2]:=0;w[3]:=Lx;w[4]:=Ly;
+ If WinAreCrossing(wn,w,w) then
+ YK_Setviewport(w,True);
+ With Pad.Field do
+ begin
+  OfsX:=(Win[1]-Wx)div(Step*Qx);
+  OfsY:=(win[2]-Wy)div Qy;
+  YK_setColor(0);
+
+  Dx:=(win[1]-Fwin[1])div (Step*Qx);
+  Dy:=(win[2]-Fwin[2])div (Qy);
+  Mx:=(win[1]-Fwin[1])mod (Step*Qx);
+  My:=(win[2]-Fwin[2])mod (Qy);
+
+  Tx:=(win[1]-Fwin[1]+wx)div (Step*Qx);
+  Ty:=(win[2]-Fwin[2]+wy)div (Qy);
+
+  Ox:=0;
+  Oy:=0;
+  If Mx<>0 then Ox:=Step*Qx-Mx;
+  If My<>0 then Oy:=Qy-My;
+
+  N:=Win[3]-Win[1]-Ox;
+  M:=Win[4]-Win[2]-Oy;
+  N:=N div (Step*Qx)+1;
+  M:=M div Qy+1;
+
+  for I:=0 to N do
+    YK_Line(Win[1]+Ox+i*Step*Qx,Win[2],Win[1]+Ox+i*Step*Qx,Win[4]);
+  for j:=0 to M do
+    YK_Line(Win[1],Win[2]+Oy+j*Qy,Win[3],Win[2]+Oy+j*Qy);
+
+   YK_SetTextJustify(CenterText,CenterText);
+  for I:=1 to N+1 do
+   for j:=1 to M+1 do
+    If Tab[Tx+i,Ty+j]<>CLEAN then
+    begin
+    str(Tab[Tx+i,Ty+j]:5:2,S);optstr(s);
+    If YK_TextWidth(s)>Step*Qx-2 then
+       begin
+        s:=copy(s,1,(Step*Qx-2)div YK_TextWidth('A')-1);
+        s:=s+#16;
+       end;
+    YK_OutTextXY(FWin[1]+Dx*Step*Qx+(i-1)*Step*Qx+(Step*Qx) div 2,
+                 FWin[2]+Dy*Qy+(j-1)*Qy+Qy div 2+1,S);
+    end;
+ Owx:=Wx;Owy:=Wy;
+ end;
+ w[1]:=0;w[2]:=0;w[3]:=Lx;w[4]:=Ly;
+ DrawCell(wpx,wpy,15,1);
+ YK_Setviewport(w,True);
+
+    if Tab[Tx+i,Ty+j]<>CLEAN then
+     begin
+      str(Tab[Tx+wpx,Ty+wpy]:20:10,S);optstr(s);
+     end else s:='';
+     SendMessage(1,Prompt+S);
+
+ Show;
+ YK_SetTextJustify(LeftText,CenterText);
+End;
+{------------------------------ы--------------}
+Procedure UpDateTable;
+var win:WinType;
+begin
+ Hide;
+ win:=Fwin;
+ inc(win[1]);inc(win[2]);dec(win[3]);dec(win[4]);
+ w[1]:=0;w[2]:=0;w[3]:=Lx;w[4]:=Ly;
+ If WinAreCrossing(win,w,w) then
+ YK_Setviewport(w,True);
+ Win:=Fwin;
+ With Pad.Field do
+ begin
+  OfsX:=(Win[1]-Wx)div(Step*Qx);
+  OfsY:=(win[2]-Wy)div Qy;
+  YK_setColor(0);
+
+  Dx:=(win[1]-Fwin[1])div (Step*Qx);
+  Dy:=(win[2]-Fwin[2])div (Qy);
+  Mx:=(win[1]-Fwin[1])mod (Step*Qx);
+  My:=(win[2]-Fwin[2])mod (Qy);
+
+  Tx:=(win[1]-Fwin[1]+wx)div (Step*Qx);
+  Ty:=(win[2]-Fwin[2]+wy)div (Qy);
+
+  Ox:=0;
+  Oy:=0;
+  If Mx<>0 then Ox:=Step*Qx-Mx;
+  If My<>0 then Oy:=Qy-My;
+
+  N:=Win[3]-Win[1]-Ox;
+  M:=Win[4]-Win[2]-Oy;
+  N:=N div (Step*Qx)+1;
+  M:=M div Qy+1;
+   YK_SetTextJustify(CenterText,CenterText);
+  for I:=0 to N do
+   for j:=0 to M do
+    DrawCell(i,j,0,Pad.FieldBCol);
+ End;
+ DrawCell(wpx,wpy,15,1);
+ w[1]:=0;w[2]:=0;w[3]:=Lx;w[4]:=Ly;
+ YK_Setviewport(w,True);
+ YK_SetTextJustify(LeftText,CenterText);
+
+    if Tab[Tx+i,Ty+j]<>CLEAN then
+     begin
+      str(Tab[Tx+wpx,Ty+wpy]:20:10,S);optstr(s);
+     end else s:='';
+ SendMessage(1,Prompt+S);
+
+ Show;
+end;
+{--------------------------------------------}
+Procedure SwapWP;
+Begin
+Hide;
+  YK_SetTextJustify(CenterText,CenterText);
+DrawCell(Owpx,Owpy,0,Pad.FieldBCol);
+DrawCell(wpx,wpy,15,1);
+  YK_SetTextJustify(LeftText,CenterText);
+    if Tab[Tx+wpx,Ty+wpy]<>CLEAN then
+                                 begin
+                                 str(Tab[Tx+wpx,Ty+wpy]:30:10,S);
+                                 OptStr(S);
+                                 end
+                             else S:='';
+  MsgToSend:=Prompt+S;
+Show;
+End;
+{--------------------------------------------}
+Procedure TableField(WinTORD:WinType;mode :byte;wp:PoRestList);
+ var c,ch:char;
+     win:WinType;
+     r:real;
+     e,x,y:integer;
+begin
+TableExCode:=Ok;
+ YK_setcolor(0);
+ if mode in [Init,ReInit] Then InitTable(mode) else
+ if mode=Redraw Then RedrawTable(winToRD) else
+ if mode=ClearTable Then begin ClearTab; RedrawTable(Fwin) end else
+ if (mode=RedrawList)and(wp<>Nil) Then
+       For e:=1 To wp^.MaxPos do
+        begin
+         wp^.seek(e);wp^.Get(win);
+         RedrawTable(win);
+        end else
+ If mode=Comm  then
+                 case PadCommand.move.com of
+                 left : c:=#75;
+                 Right: c:=#77;
+                 Up:    c:=#72;
+                 Down:  C:=#80;
+                 AbsNul:C:=#255;
+                 end;
+ If mode=Comm then
+  begin
+   with Pad.Field do
+   begin
+    Owy:=wy;Owx:=wx;
+    if (c=#80)and(Wy+Fwin[4]-FWin[2]+Qy-1<=Width+Qy) Then inc(Wy,Qy);
+    if (c=#72)and(Wy-Qy>=0) Then dec(Wy,Qy);
+    if (c=#77)and(Wx+Fwin[3]-FWin[1]+Step*Qx-1<=Length+Step*Qx)Then inc(Wx,Step*Qx);
+    if (c=#75)and(Wx-Step*Qx>=0) Then dec(Wx,Step*Qx);
+    if (c=#255) Then begin Wx:=0;Wy:=0;end;
+
+    if (Owx<>wx)or(Owy<>wy)then Updatetable;
+   end;
+  end;
+ If mode=SaveTableAs then
+                   if not saveTab(FNReport.FN) then
+                   begin
+                    TableExCode:=FAULT;
+                    exit;
+                   end
+                   else begin
+                         CurrTabFile:=FNReport.FN;
+                         with Pad do
+                         Pad.Headline:=Copy(Headline,1,system.pos(':',
+                                            headline)+1) +FNReport.FN;
+                         PutHeadLine(True);
+                        end;
+ If mode=SaveTable then
+                   if not saveTab(CurrTabFile) then
+                   begin
+                    TableExCode:=FAULT;
+                    exit;
+                   end;
+ If mode=LoadTable then
+                   if not loadTab(FNReport.FN) then
+                   begin
+                    TableExCode:=FAULT;
+                    exit;
+                   end
+                   else begin
+                         RedrawTable(Fwin);
+                         CurrTabFile:=FNReport.FN;
+                         with Pad do
+                         Pad.Headline:=Copy(Headline,1,system.pos(':',
+                                            headline)+1) +FNReport.FN;
+                         PutHeadLine(True);
+                        end;
+ If mode=Event then
+  begin
+   c:=Kbd.EXC;
+   if c in [#75,#77,#80,#72,#255] then
+   with Pad.Field do
+   begin
+    Owpy:=wpy;Owpx:=wpx;
+    Owy:=wy;Owx:=wx;
+    if (c=#80)then
+      If (Wpy+1>M-1) Then
+          If (Wy+Fwin[4]-FWin[2]+Qy<=Width+Qy) Then inc(Wy,Qy)else
+                   Else inc(Wpy);
+    if (c=#72)then
+      If (Wpy-1<1) Then
+          If (Wy-Qy>=0) Then dec(Wy,Qy)else
+                   Else dec(Wpy);
+    if (c=#77)then
+      If (Wpx+1>N-1) Then
+          If (Wx+Fwin[3]-FWin[1]+Qx*3<=Length+Step*Qx) Then inc(Wx,Qx*3)else
+                   Else inc(Wpx);
+    if (c=#75)then
+      If (Wpx-1<1) Then
+          If (Wx-Qx*3>=0) Then dec(Wx,Qx)else
+                   Else dec(Wpx);
+    If (MS.B=Left)and XYBelongTo(Fwin,MS.X,MS.Y) then
+         FindNewWP(MS.X,MS.Y);
+       win:=Fwin;
+ inc(win[1]);inc(win[2]);dec(win[3]);dec(win[4]);
+       YK_Setviewport(win,True);
+    If (Owpx<>wpx)or(Owpy<>wpy)then SwapWP;
+      w[1]:=0;w[2]:=0;w[3]:=Lx;w[4]:=Ly;
+      YK_Setviewport(w,True);
+    If (Owpx<>wpx)or(Owpy<>wpy)then SendMessage(1,MsgToSend);
+    if (Owx<>wx)or(Owy<>wy)then UpDateTable;
+   end;
+  if Kbd.C in ['0'..'9','.','e','E','-','+'] then
+   with Pad.Info do
+     If length(Msg)<40 then SendMessage(1,Msg+Kbd.C) else;
+  if Kbd.C in [#8] then
+   with Pad.Info do
+     If length(Msg)>length(Prompt) then
+       begin
+        delete(Msg,length(Msg),1);
+        SendMessage(1,Msg)
+       end;
+  if Kbd.C in [#13] then
+   with Pad.Info do
+       begin
+        s:=copy(Msg,length(Prompt),length(Msg)-length(Prompt)+1);
+        val(s,r,e);
+        If e<>0 then
+          begin
+           SendMessage(4,'Error: I can''t recognize a digit in this string.');
+           WaitAWhile;
+           SendMessage(1,Prompt);
+          end
+        else
+          begin
+           Tab[Tx+wpx,Ty+wpy]:=r;
+           owpx:=wpx+1;
+           SwapWP;
+          end;
+       end;
+    WhereMsgIsBegin(x,y);
+    x:=x+TextWidth(Pad.Info.Msg);
+    If ClockMem>=Takt+Period then
+    begin
+    If Not Apeared Then
+       begin
+        YK_SetColor(0);
+        Apeared:=True;
+       end        else
+       begin
+        YK_SetColor(7);
+        Apeared:=False;
+       end;
+     Takt:=ClockMem;
+     YK_OutTextXY(x,y,#219);
+    end;
+  end;
+end;
+{--------------------------------------------}
+Procedure ResultField(WinToRD:WinType;mode :byte;wp:PoRestList);
+ var c,ch:char;
+     e:integer;
+     win:WinType;
+begin
+ YK_setcolor(0);
+ if mode in [Init,ReInit] Then InitTable(mode) else
+ if mode=Redraw Then RedrawTable(winToRD) else
+ if (mode=RedrawList)and(wp<>Nil) Then
+      For e:=1 To wp^.MaxPos do
+       begin
+        wp^.seek(e);wp^.Get(win);
+        RedrawTable(win);
+       end else
+ if mode=Event then
+  begin
+   c:=FullKey(ch,0);
+   if c in [#75,#77,#80,#72] then
+   with Pad.Field do
+   begin
+    Owy:=wy;Owx:=wx;
+    if (c=#80)and(Wy+Fwin[4]-FWin[2]+Qy<=Width) Then inc(Wy,Qy);
+    if (c=#72)and(Wy-Qy>0) Then dec(Wy,Qy);
+    if (c=#77)and(Wx+Fwin[3]-FWin[1]+Qx div 2<Length)Then inc(Wx,Qx div 2);
+    if (c=#75)and(Wx-Qx div 2>0) Then dec(Wx,Qx div 2);
+
+    if (Owx<>wx)or(Owy<>wy)then RedrawTable(FWin);
+   end;
+  end;
+ if mode=AbsNul then
+   with Pad.Field do
+   begin
+    Owy:=wy;Owx:=wx;
+    wy:=0;wx:=0;
+    if (Owx<>wx)or(Owy<>wy)then RedrawTable(FWin);
+   end;
+
+end;
+{====================================================}
+Procedure BorisInit(mode:integer);
+var OfsX,OfsY,i,j:Integer;
+begin
+ With Pad.Field do
+ case mode of
+ Init:
+       begin
+        BorisMethod:=0;
+        Wx:=0;
+        Wy:=0;
+        OWx:=0;
+        OWy:=0;
+        Wpx:=1;
+        Wpy:=1;
+        OWpx:=1;
+        OWpy:=1;
+       Length:=FWin[1]-FWin[3];
+       Width:=FWin[2]-Fwin[4];
+       end;
+ ReInit:
+       begin
+       Length:=bix;
+       Width:=biy;
+       end;
+ end;
+   BorisFN:='';
+end;
+{--------------------------------------------}
+Procedure BorisListRedraw(L:PoRestList;m:byte);
+var w,o:WinType;e:word;
+Begin
+hide;
+ o:=Fwin;
+ inc(o[1]);inc(o[2]);dec(o[3]);dec(o[4]);
+ YK_setcolor(0);
+  case m of
+  LoadPCX: begin hide; OpenPCX(1,o[1],o[2],o[3],o[4],
+                BorisFN,Nil,bix,biy);
+                 show;
+           end;
+  LoadSX:  begin
+             ToBorisList(L,o);
+             Open(1,o[1],o[2],o[3],o[4],
+                BorisFN,True,L^.Head.First,bix,biy,0);
+             FromBorislist(L,o);
+           end;
+  LoadGEK:  begin
+            hide;
+            gekload(BorisFN,o[1],o[2],o[3]-o[1],
+                    o[4]-o[2],1);
+            show;
+           end;
+  0:      For e:=1 to L^.MaxPos do
+           begin
+            L^.seek(e); L^.Get(w);
+            DrawFieldBG(w);
+           end;
+  end;
+ show;
+End;
+{--------------------------------------------}
+Procedure BorisRedraw(w:WinType;m:byte);
+Begin
+ YK_setcolor(0);
+  case m of
+  LoadPCX: begin hide; OpenPCX(1,Fwin[1]+1,Fwin[2]+1,Fwin[3]-1,Fwin[4]-1,
+                BorisFN,Nil,bix,biy);
+                 show;
+           end;
+  LoadSX:  begin
+            hide;
+             Open(1,Fwin[1]+1,Fwin[2]+1,Fwin[3]-1,Fwin[4]-1,
+                  BorisFN,True,Nil,bix,biy,0);
+            show;
+           end;
+  LoadGEK:  begin
+            hide;
+            gekload(BorisFN,Fwin[1]+1,Fwin[2]+1,Fwin[3]-Fwin[1]-2,
+                    Fwin[4]-Fwin[2]-2,1);
+            show;
+           end;
+  0:       DrawFieldBG(Fwin);
+  end;
+End;
+{--------------------------------------------}
+Procedure BorisField(WinToRD:WinType;mode :byte;wp:PoRestList);
+var
+    m:byte;
+    w:winType;
+begin
+
+  If Mode in [LoadPCX,LoadSX,LoadGEK] then
+     begin
+      BorisMethod:=Mode;
+     end;
+ If mode in [Init,ReInit] then BorisInit(mode) else
+ If mode in [Redraw,LoadSX,LoadPCX,LoadGEK]
+      then BorisRedraw(WinToRD,BorisMethod) else
+ if (mode=RedrawList)and(wp<>Nil) Then BorisListRedraw(wp,BorisMethod) else
+ If Mode=Event then exit;
+end;
+{--------------------------------------------}
+End.

@@ -1,0 +1,1076 @@
+{--Z-----------------------------------------------------------}
+procedure clb;
+begin
+     inline($FA);
+          MemW[0:$41A]:=MemW[0:$41C];
+     inline($FB);
+end;
+  {------------------------------------------------------------}
+  PROCEDURE help;
+label 1,10;
+TYPE
+   h=record
+         s:array[1..100] of string[45];
+         qs:byte;
+     end;
+var xx,yy:byte;mxx,gwx,gwy,myy:integer;sl:char;
+f:file of h; sk:h;i,d,j,k:byte;
+BEGIN
+setlinestyle(0,0,1);
+setcolor(0);
+assign(f,'radpl.hlp');
+{$I-}
+reset(f);
+{$I+}
+if IOResult=0
+         then
+           begin
+            seek(f,0);
+            read(f,sk);
+           end
+         else
+           begin
+              setcolor(14);
+              outtextxy(1,getmaxy-9,'FILE "RADPL.HLP" NOT FOUND');
+              DELAY(2000);
+              setcolor(0);
+              outtextxy(1,getmaxy-9,'FILE "RADPL.HLP" NOT FOUND');
+              exit
+           end;
+mxx:=getmaxx;
+myy:=getmaxy;
+xx:=mxx div 6;
+yy:=myy div 6;
+   if maxavail<imagesize(xx+15,yy,mxx-xx-15,myy-yy)
+          then  begin
+               setcolor(4);
+            settextstyle(0,0,1);
+ outtextxy(1,getmaxy-9,'There is not enhaph memory to load "H E L P"');
+                delay(2000);
+                setcolor(0);
+ outtextxy(1,getmaxy-9,'There is not enhaph memory to load "H E L P"');
+                goto 10
+                end;
+       getmem(poin,imagesize(xx+15,yy,mxx-xx-15,myy-yy));
+       getimage(xx+15,yy,mxx-xx-15,myy-yy,poin^);
+  setfillstyle(1,7);
+  bar(xx+15,yy,mxx-xx-15,myy-yy);
+  setcolor(0);
+  settextstyle(0,0,1);
+  outtextxy(mxx-xx-300,yy+2,'RADIOPLACING --> help');
+  outtextxy(mxx-xx-380,myy-yy-8,'[Esc]-quit            [PgDn] or [PgUp]');
+  setcolor(3);
+  rectangle(xx+25,yy+10,mxx-xx-25,myy-yy-10);
+  line(xx+26,yy+11,xx+26,myy-yy-11);
+  line(mxx-xx-26,yy+11,mxx-xx-26,myy-yy-11);
+  setviewport(xx+30,yy+15,mxx-xx-30,myy-yy-15,true);
+  setcolor(0);
+ gwx:=mxx-2*xx-60;
+ gwy:=myy-2*yy-30;
+ k:=1;d:=gwy div 10;j:=d;
+repeat
+    bar(0,0,gwx,gwy);
+    for i:=1 to j do
+    begin
+    outtextxy(10,10*(i-1),sk.s[k+i-1]);
+    end;
+    i:=k;
+  repeat
+      sl:=readkey;
+      while keypressed do sl:=readkey;
+      if (sl=#81)and(k+d+1<=sk.qs) then k:=k+d;
+    if sk.qs-k<d then j:=sk.qs-k
+                 else j:=d;
+    if (sl=#73)and(k-d>=1)then begin j:=d;k:=k-d end;
+  until (((sl=#81)or(sl=#73))and(i<>k))or(sl=#27);
+until sl=#27;
+1:     setviewport(0,0,mxx,myy,true);
+       putimage(xx+15,yy,poin^,normalput);
+       freemem(poin,imagesize(xx+15,yy,mxx-xx-15,myy-yy));
+10:     setviewport(0,0,mxx,myy,true);
+END; {конец help}
+{---------------------------------------------------------}
+procedure spfil(var i:byte);
+var dirinfo:SearchRec;
+begin
+findfirst('*.dat',anyfile,dirinfo);
+if DosError<>0 then begin v:=false;exit end;
+i:=0;V:=TRUE;
+while DosError=0 do
+begin
+   inc(i);
+   stp[i]:=dirinfo.name;
+   findnext(dirinfo)
+end;
+end;{the end of spfil}
+{----------------------------------------------------------}
+procedure chos(k:integer);
+Label 1;
+Var r:real;
+begin
+   setbkcolor(7);
+   setfillstyle(1,8);
+   setcolor(12);
+   bar(4*getmaxx div 30,3*getmaxy div 4+1,
+   47*getmaxx div 60,47*getmaxy div 60);
+   bar(3*getmaxx div 4+1,4*getmaxy div 30,
+   47*getmaxx div 60,3*getmaxy div 4);
+   setfillstyle(1,1);
+   bar(getmaxx div 10,getmaxy div 10,
+   3*getmaxx div 4,3*getmaxy div 4);
+   pg:=26*getmaxx div 40;
+   dg:=26*getmaxy div 40;
+   dx:=pg div 4;
+   setviewport(getmaxx div 10,getmaxy div 10,
+   3*getmaxx div 4,3*getmaxy div 4,false);
+   setcolor(15); y:=textheight('l')+2;
+   outtextxy(pg DIV 5,1,'S E L E C T  F I L E  N A M E :');
+   for i:=1 to 3 do line(dx*i,dg,dx*i,y);
+   line(0,y,pg,y);
+     x:=0;y:=0;
+     lg:=dg div (2*textheight('k'))-1;
+   for j:=1 to k do
+   begin
+     if ((j-1) mod lg=0)and (j<>1) then begin x:=x+dx;y:=0 end;
+      y:=y+2*textheight('l');
+      if j=1 then setcolor(2) else setcolor(15);
+      outtextxy(x+3,y,stp[j]);
+   end;   l:=1;c:='L';j:=1;x:=0;y:=0;i:=k;
+  while (c<>#13)and(c<>' ') do
+  begin
+   c:=readkey;
+   while keypressed do c:=readkey;
+   if c=#80 then if j+1<=i then
+                begin j:=j+1;k:=-1 end else
+   else
+   if c=#72 then if j-1>=1 then
+                begin j:=j-1;k:= 1 end else;
+   if c=#27 then begin v:=false;goto 1 end;
+   n:=l;
+   l:=j-lg*((j-1) div lg);
+   setcolor(15);
+   if n<>l then
+      outtextxy(x+3,y+2*textheight('l')*n,stp[j+k]);
+      if (((j mod lg=0) and (k=1))
+      or (((j-1) mod lg =0) and (k=-1))) and not((j=i)and(l=n))
+       then x:=x-k*dx;
+   setcolor(2);
+      outtextxy(x+3,y+2*textheight('l')*l,stp[j]);
+  end;
+  stkr:=stp[j];
+1: setviewport(0,0,getmaxx,getmaxy,true);
+  setbkcolor(0);
+  cleardevice;
+end;{the end of chos}
+{-----------------------------------------------------------}
+procedure notice;
+begin
+  setcolor(14);
+  setfillstyle(4,4);
+  bar(getmaxx div 4,getmaxy div 4,3*getmaxx div 4,3*getmaxy div 4);
+  rectangle(11*getmaxx div 40,11*getmaxy div 40,
+  29*getmaxx div 40,29*getmaxy div 40);
+  rectangle(11*getmaxx div 40-5,11*getmaxy div 40-3,
+  29*getmaxx div 40+5,29*getmaxy div 40+3);
+   outtextxy(6*getmaxx div 20,6*getmaxy div 20,
+'THISE  FILE IS  C A N  N O T');
+   outtextxy(6*getmaxx div 20,8*getmaxy div 20,
+'BE USED IN PROGRAM /RADIOPLACING/');
+ DELAY(3000);
+ setcolor(1);
+end;
+{-----------------------------------------------------}
+procedure way;
+begin
+     j:=15;i:=13;
+     setbkcolor(0);
+     cleardevice;
+     c:='l';
+  while (c<>#13)and(c<>' ') do
+  begin
+    if j=15 then begin stkr:='Yes';stchains:='No'end
+            else begin stkr:='No'; stchains:='Yes'end;
+    setcolor(0);
+    outtextxy(getmaxx div 9
+    +textwidth('                                           ')
+    ,getmaxy div 3,stchains);
+    outtextxy(getmaxx div 9
+    +textwidth('                                           ')
+    ,2*getmaxy div 3,stkr);
+    setcolor(j);
+    outtextxy(getmaxx div 9,getmaxy div 3,
+    'N E W  F I L E  O F  D A T A ..............'+stkr);
+    setcolor(i);
+    outtextxy(getmaxx div 9,2*getmaxy div 3,
+               'S E L E C T  F I L E  N A M E..............'+stchains);
+     c:=readkey;
+     while keypressed do c:=readkey;
+     if (c=#80)or(c=#72) then begin
+                              k:=j;
+                              j:=i;
+                              i:=k
+                             end;
+    if c=#27 then begin v:=false; cleardevice;exit end;
+  end;
+  v:=true;
+  cleardevice;
+end;{the end of way}
+{----------------=========------------}
+procedure bgn(text:string);
+     begin
+         cleardevice;
+         setbkcolor(11);
+         setfillstyle(1,8);
+         bar(getmaxx div 10+getmaxx div 30,getmaxy div 10+getmaxy div 30,
+         2*getmaxx div 3+getmaxx div 30,getmaxy div 3+getmaxy div 30);
+         settextstyle(0,0,1);
+         setfillstyle(1,14);
+         bar(getmaxx div 10,getmaxy div 10,2*getmaxx div 3,getmaxy div 3);
+         x:=getmaxx div 9;
+         mx:=getmaxx div 2-getmaxx div 20;
+         y:=getmaxy div 6;
+         my:=2*getmaxy div 7;
+         x1:=getmaxx div 40;
+         y1:=getmaxy div 40;
+         settextstyle(0,0,2);
+         setcolor(8);
+         outtextxy(getmaxx div 9+2,getmaxy div 9+1,
+         text);
+         setcolor(12);
+         outtextxy(getmaxx div 9-7,getmaxy div 9-9,
+         text);
+         k:=getmaxx div 6;
+         setfillstyle(1,13);
+         x:=x+x1;
+         bar(x,y+y1,x+k,my+y1);
+         setcolor(1);
+         setlinestyle(0,0,2);
+         rectangle(x-1,y+y1-1,x+k+1,my+y1+1);
+         settextstyle(0,0,3);
+         stkr:='YES';
+         outtextxy(x+10,y+y1+4,stkr);
+         v:=true;
+         j:=(mx-x);
+     repeat
+         clb;
+         c:=readkey;
+         if c=#0 then c:=readkey;
+         if c=#27 then begin bol:=false;exit end;
+       if (c<>' ')and(c<>#13) then
+        begin
+         setcolor(13);
+         outtextxy(x+10,y+y1+4,stkr);
+         setcolor(14);
+         rectangle(x-1,y+y1-1,x+k+1,my+y1+1);
+         setlinestyle(0,0,1);
+       for i:=y1 downto 1 do
+          begin
+           setcolor(13);
+            line (x,y+i-1,x+k,y+i-1);
+            setcolor(8);
+            line (x,my+i,x+k,my+i);
+          end;
+          for x:=x downto x-x1 do
+          begin
+            setcolor(13);
+            line (x,y,x,my);
+            setcolor(8);
+            line (x+k,y+y1,x+k,my);
+            setcolor(14);
+            line (x+k,y,x+k,y+y1-1);
+          end;
+             for i:=1 to j do
+         begin
+          if v then begin dx:=14;dy:=14 end
+               else begin dx:=8 ;dy:=13 end;
+               setcolor(dx);
+          line (x+x1,my+1,x+x1,my+y1);
+               setcolor(dy);
+          line (x,y,x,my);
+          if v then begin dx:=13;dy:=8 end
+               else begin dx:=14;dy:=14 end;
+               setcolor(dy);
+          line(x+k+x1,y+y1,x+k+x1,my+y1);
+               setcolor(dx);
+           if v then line (x+k,y,x+k,my)
+                else begin line(x+k,y,x+k,y+y1);
+                           setcolor(8);
+                           line(x+k,y+y1,x+k,my);
+                     end;
+        if v then inc(x)
+             else x:=x-1;
+         end;
+        if not v then inc(x)
+             else x:=x-1;
+
+       for x:=x to x+x1 do
+          begin
+            setcolor(14);
+            line (x-1,y,x-1,my);
+            setcolor(13);
+            line (x+k,y,x+k,my);
+          end;
+       for i:=y to y+y1-1 do
+          begin
+           setcolor(13);
+            line (x,my+i-y+1,x+k,my+i-y+1);
+            setcolor(14);
+            line (x,i,x+k+1,i);
+          end;
+          setlinestyle(0,0,2);
+         setcolor(1);
+         rectangle(x-1,y+y1-1,x+k+1,my+y1+1);
+     if not v then stkr:='YES'
+              else stkr:='NO';
+      for i:=1 to 5 do
+       begin
+        setcolor(14+i);
+        outtextxy(x+10,y+y1+4,stkr)
+       end
+       end;
+       if v then v:=false
+            else v:=true;
+     until (c=' ')or(c=#13);
+     bol:=true;
+     end;
+{--------------------------------------------------------}
+procedure WFAIL ;
+label 1,2;
+var j:byte;st:array[1..20] of string[50];
+begin
+2: way;
+  if not v then exit;
+  setbkcolor(8);
+  J:=I;
+1:  spfil(i);
+  if (J=15)and v then
+           begin {//////name/////////}
+                 chos(i);
+                 if not v then exit;
+                 setbkcolor(8);
+              bar(getmaxx div 10,getmaxy div 10,
+              2*getmaxx div 3,getmaxy div 3);
+              outtextxy(getmaxx div 9,getmaxy div 9,
+               'N O T I C E : ALL DATAS IN FILE ');
+              outtextxy(getmaxx div 9,getmaxy div 6,
+                 stkr+' WILL BE DELETED !!');
+                 sound(1000);
+                 delay(400);
+                 nosound;
+              outtextxy(getmaxx div 9, getmaxy div 4,
+               'ARE YOU SURE (Y/N)?');
+               repeat
+                 clb;
+                 c:=readkey;
+                 if (c='n') or (c='N') then goto 1;
+               until (c='Y')or(c='y');
+             end {///////name////////}
+         else
+             begin {\\\\\\\\\ent\\\\\\\}
+                 cleardevice;
+            IF j=15 then
+                Begin
+                  setfillstyle(1,8);
+                  bar(getmaxx div 10+getmaxx div 30,
+                  getmaxy div 10+getmaxy div 30,
+                  getmaxx div 2+getmaxx div 30,
+                  getmaxy div 4+getmaxy div 30);
+                  setfillstyle(6,2);
+                  bar(getmaxx div 10,getmaxy div 10,
+                  getmaxx div 2,getmaxy div 4);
+                  setcolor(13);
+                  rectangle(getmaxx div 10+10,getmaxy div 10+5,
+                  getmaxx div 2-10,getmaxy div 4-5);
+                  setcolor(4);
+                  outtextxy(getmaxx div 8,getmaxy div 7,
+                  'FILE "*.dat" IS NOT EXIST !');
+                  delay(5000);
+               End;
+                    bgn('KRIATE NEW FILE ?');
+                    settextstyle(0,0,1);
+                   if not bol then exit;
+                   if v then if j=15 then begin cleardevice;
+                                                              exit
+                                                        end
+                                                   else goto 2;
+                 cleardevice;
+                 setfillstyle(8,4);setcolor(3);
+                 bar(0,getmaxy div 6,getmaxx,
+                 11*getmaxy div 30);
+                 setfillstyle(1,4);
+                 bar(getmaxx div 10,getmaxy div 5,9*getmaxx div 10,
+                 getmaxy div 3);
+                  outtextxy(getmaxx div 9,getmaxy div 4,
+                  'ENTER PLEASE NAME OF NEW FILE =>');
+                          directvideo:=false;
+                          window(43,7,52,7);
+                       repeat
+                          textcolor(4);
+                          gotoxy(1,1);
+                          write('         ');
+                          gotoxy(1,1);
+                          if keypressed then c:=readkey;
+                          if c=#27 then exit;
+                          readln (stkr);
+                          stchains:=copy(stkr,pos('.',stkr),4);
+                          stkr:=copy(stkr,1,pos('.',stkr)+3);
+                          i:=0;v:=true;
+                          repeat
+                          i:=i+1;
+                           case stkr[i] of
+                          ',',':',';','"','{','[','}',']',
+                          '@','#','$','%','^','&','*','(',')','+','\','|',
+                          '/','?','<','>',#39: v:=false end;
+                          until (i=8)or(not v);
+
+                       until                 v  and
+                              (length(stkr)<=8)and
+                              (length(stkr)>=1) and
+                              ((stchains='.dat')or
+                               (stchains='.DAT'));
+                         directvideo:=true;
+         end; {\\\\\\\ent\\\\\\\\\\}
+{           assign(fiil,stkr);
+           rewrite(fiil);
+           }
+              cleardevice;
+              setfillstyle(1,9);
+              bar(0,0,getmaxx,getmaxy div 24);
+              setcolor(4);
+              outtextxy(getmaxx div 4,getmaxy div 100,
+              'R E C O R D I N G  T O  "'+stkr+'" ');
+              outtextxy(getmaxx div 60,getmaxy div 22,
+              'PLEASE ENTER chains:');
+       i:=0;j:=0; setcolor(4);c:='l';
+       setfillstyle(1,0);setcolor(4);
+    while (c<>#27)and(i<10) do
+    Begin
+     i:=i+1;c:='l';j:=0;
+      line(30,38+i*10,600,38+i*10);
+     while (c<>#13)and(c<>#27) do
+      Begin
+      c:=readkey;
+              st[i]:=st[i]+c;
+              if (j<50)and(((c>#48)and(c<#57))or
+              ((c>#97)and(c<#122))or(c=#44)or(c=#40)or(c=#41)) then
+              BEGIN  j:=j+1;
+               outtextxy(50+j*10,30+i*10,c);
+              END;
+              if c=#8 then
+              Begin
+                  st[i]:=copy(st[i],1,length(st[i])-1);
+              bar(50+j*10,30+i*10,60+j*10,37+i*10);
+                 if j>0 then j:=j-1;
+              End;
+     End;
+   End;
+   cleardevice;
+   for i:=1 to 5 do outtextxy(0,i*10,st[i]);readln;
+{      write (fiil,a);
+      close(fiil);  }
+      cleardevice;
+end;
+{-----------------------------------------------------------------}
+procedure RFAIL(var qv:byte);
+label 1;
+begin
+1:cleardevice;
+spfil(i);
+if v then begin chos(i);
+ if not v then begin v:=true;qv:=1;exit end;end
+     else begin v:=false;exit end;
+ setfillstyle(1,10);
+qv:=4;
+ bar(getmaxx div 7,getmaxy div 2,
+ 6*getmaxx div 7,2*getmaxy div 3);
+ setcolor(15);
+rectangle(getmaxx div 7+10,getmaxy div 2+5,
+ 6*getmaxx div 7-10,2*getmaxy div 3-5);
+ outtextxy(getmaxx div 5,17*getmaxy div 30,
+ 'R E A D  F R O M  F I L E  "'+stkr+'"');
+ setcolor(13);
+ outtextxy(getmaxx div 5-2,17*getmaxy div 30-1,
+ 'R E A D  F R O M  F I L E  "'+stkr+'"');
+   {$I-}
+   assign(fiil,stkr);
+   reset(fiil);
+   {$I+}
+if (ioresult<>0) or (filesize(fiil)=0)
+ then
+      begin
+         setfillstyle(1,8);
+         bar(getmaxx div 7+getmaxx div 25,
+         getmaxy div 4+getmaxy div 25,
+         6*getmaxx div 7+getmaxx div 25,
+         3*getmaxy div 4+getmaxy div 25);
+         setfillstyle(1,9);
+         setcolor(15);
+         bar(getmaxx div 7,getmaxy div 4,6*getmaxx div 7,3*getmaxy div 4);
+         rectangle(getmaxx div 7+10,getmaxy div 4+5,
+         6*getmaxx div 7-10,3*getmaxy div 4-5);
+         setcolor(11);
+         outtextxy(getmaxx div 6,getmaxy div 3,
+         'INVALID STRUCTURE OF FILE "'+stkr+'"');
+         delay(2000);
+          goto 1;
+      end;
+  seek(fiil,0);
+read(fiil,a);
+close(fiil);
+v:=false;
+if a.quanchains>0 then
+begin
+v:=true;
+for i:=1 to a.quanchains do
+if a.quanelem[i]<=0 then v:=false;
+end;
+if v then
+begin
+ for i:=1 to a.quanchains do
+  for j:=1 to a.quanelem[i] do
+    if (a.nameelem[i,j]=' ')or
+    (a.nameelem[i,j]='') then v:=false else;
+end;
+if not v then begin notice;goto 1 end;
+v:=true;
+cleardevice;
+end;
+{----------------------------------------------------------------}
+function kr(n,l:integer):integer;
+begin
+    n:=(n-x+dlx) div (2*dlx);
+    l:=a.s-(l-y+dly) div (2*dly)+1;
+    kr:=ne[n,l]
+end;
+{-------------------------------------------------------------}
+procedure koord(k:integer;var xl,yl:integer);
+begin
+ xl:=nex[k]*dx+x-dlx;
+ yl:=(a.s-ney[k]+1)*dy+y-dly
+end;
+{-------------------------------------------------------------}
+function f(n,l:integer):byte;
+var yu:integer;
+begin
+        yu:=kr(n,l);
+     for j:=1 to i do
+     if  yu=kort[j] then begin f:=1;exit end
+                          else f:=0;
+end;
+{---------------------------------------------------------------}
+function porkor(k:integer):integer;
+var j:integer;
+begin
+    for j:=1 to i do
+      if k=kort[j] then begin porkor:=j; exit end;
+    porkor:=0;
+end;
+{--------------------------------------------------------------}
+procedure displ(l,q:byte;VAR fin:byte;ty:boolean);
+label 1,2,9;
+var j,m,w,sa,v,k,r:integer;ex:char;
+begin
+setwritemode(1);
+   setlinestyle(0,0,1);
+   settextstyle(0,0,1);
+   sa:=textheight('A')+2;
+   m:=sa;
+   if l+getmaxy div sa-2 < q then w:=l+getmaxy div sa-2
+                        else w:=q;
+   setfillstyle(1,1);
+   bar(mx+5,sa-8,mx+100,sa*(w-l+2)+1);
+   setcolor(15);
+   rectangle(mx+8,sa-5,mx+97,sa*(w-l+2)-1);
+   setfillstyle(1,10);
+   j:=mx+30+textwidth(choise[l]);
+   bar(mx+30,sa,j,sa+8);
+   settextstyle(0,0,1);
+   setcolor(14);
+   for j:=l to w do
+   outtextxy(mx+30,(j-l+1)*sa+1,choise[j]);
+   setcolor(12);
+   outtextxy(mx+30,sa+1,choise[l]);
+   ex:='m';
+ while (ex<>#13)and(ex<>' ') do
+ begin
+     ex:=readkey;
+     while keypressed do ex:=readkey;
+     setfillstyle(1,0);
+         if ex=#80 then k:= sa
+    else if ex=#72 then k:=-sa
+    else if ex=#81 then begin if w<q then begin
+                              bar(mx+5,sa-8,mx+100,getmaxy);
+                                  displ (w+1,q,fin,ty);
+                              if fin=88 then exit end
+                                     else goto 1
+                        end
+    else if ex=#73 then begin if l>1 then begin
+                              bar(mx+5,sa-8,mx+100,getmaxy);
+                                  displ (l-getmaxy div sa+1,q,fin,ty);
+                              if fin=88 then exit end
+                                     else goto 1
+                         end
+    else if ex=#27 then
+                     begin
+                        setfillstyle(1,0);
+                        bar(mx+5,sa-8,mx+100,getmaxy);
+                        exit
+                     end
+    else goto 1 ;
+         m:=m+k;
+     if (m<=(w-l+1)*sa) and (m>=sa) then
+      begin
+         setfillstyle(1,1);
+         bar (mx+30,m-k,mx+30+textwidth(choise[l-1+(m-k) div sa]),m-k+8);
+         setcolor(14);
+         outtextxy(mx+30,m-k+1,choise[l-1+(m-k) div sa]);
+         setfillstyle(1,10);
+         bar (mx+30,m,mx+30+textwidth(choise[l-1+m div sa]),m+8);
+         setcolor(12);
+         outtextxy(mx+30,m+1,choise[l-1+m div sa]);
+      end
+     else
+         m:=m-k;
+1: end;
+setfillstyle(1,0);
+ bar(mx+5,sa-8,mx+100,getmaxy);
+ fin:=88;
+ if ty then begin
+ setcolor(15);
+ line(x,p,mx,p);
+ setlinestyle(0,0,3);
+ line(n,y,n,my);
+            end;
+ setfillstyle(1,15);
+ koord(kort[l-1+m div sa],e,v);
+ bar(e-dlx+1,v-dly+1,e+dlx-2,v+dly-1);
+ kort[l-1+m div sa]:=0;
+setwritemode(0);
+ x1:=e;y1:=v;
+  repeat
+      clb;
+      ex:=readkey;
+      while keypressed do ex:=readkey;
+           if ex=#77 then begin k:= dx;r:=0 end
+      else if ex=#75 then begin k:=-dx;r:=0 end
+      else if ex=#80 then begin r:= dy;k:=0 end
+      else if ex=#72 then begin r:=-dy;k:=0 end
+      else goto 2;
+       x1:=x1+k;
+       y1:=y1+r;
+     if (x1>lg-dx+7)and(x1<pg+dx)and(y1>ug-dy+7)and(y1<dg+dy)
+     then
+        begin
+          if f(x1-k,y1-r)=1
+           then
+              begin
+                 setfillstyle(1,1);
+                 if porkor(kr(x1-k,y1-r))<>0
+                  then stkr:=choise[porkor(kr(x1-k,y1-r))];
+              end
+           else begin
+            setfillstyle(1,0);
+            stkr:=''
+                end;
+           bar (x1-dlx+1-k,y1-dly+1-r,x1+dlx-2-k,y1+dly-1-r);
+           setfillstyle(1,15);
+           bar (x1-dlx+1,y1-dly+1,x1+dlx-2,y1+dly-1);
+           setcolor(15);
+           outtextxy(x1-textwidth(stkr) div 2-k,y1-4-r,stkr);
+        end
+     else begin
+         x1:=x1-k;
+         y1:=y1-r
+          end;
+2: until ((ex=#13)or(ex=' ')) and (f(x1,y1)=0);
+   kort[l-1+m div sa]:=kr(x1,y1);
+   setfillstyle(1,1);
+   bar(x1-dlx+1,y1-dly+1,x1+dlx-2,y1+dly-1);
+   setwritemode(1);
+   setcolor(15);
+   outtextxy(x1-textwidth(choise[l-1+m div sa]) div 2,
+   y1-4,choise[l-1+m div sa]);
+   setlinestyle(0,0,1);
+   if ty then
+  begin
+   line(x,p,mx,p);
+   setlinestyle(0,0,3);
+   line(n,y,n,my);
+  end;
+   kort[l-1+m div sa]:=kr(x1,y1);
+   fin:=88;
+       end;{  displ }
+{--------------------------------------------------------------}
+procedure vcom;
+begin
+setcolor(15);
+outtextxy (1,getmaxy-8,'COMMAND:');
+end;
+{------------------------}
+procedure com;
+begin
+setcolor(0);
+outtextxy (1,getmaxy-8,'COMMAND:');
+end;
+{----------------------------------------------------}
+Function Vmenu(c:char):char;
+Var mn:array[1..7] of string[12];
+x,i,d,y,l,g,k:integer;
+Procedure OutOpt(x,y:integer;s:string);
+begin
+   setcolor(0);
+   outtextxy(x,y,s);
+   setcolor(12);
+   outtextxy(x,y,s[1]);
+End;
+begin
+case c of
+'L':d:=1;
+'N':d:=2;
+'R':d:=5;
+'H':d:=4;
+'P':d:=3;
+'A':d:=6;
+'Q':d:=7
+end;
+settextstyle(0,0,1);
+mn[1]:='Load';mn[2]:='New';mn[5]:='Remove-[F2]';
+mn[4]:='Help-[F1]';mn[7]:='Quit';
+mn[3]:='Placing';mn[6]:='Abort';
+   setfillstyle(1,7);
+   l:=getmaxx div 20;
+   g:=l;
+   for i:=1 to d-1 do
+   g:=g+textwidth(mn[i])+l;
+   k:=textheight('l');
+   x:=l;
+   bar(0,0,getmaxx,k);
+   setfillstyle(1,14);
+   bar(g-1,0,g+textwidth(mn[d])+1,k);
+   for i:=1 to 7 do
+   Begin
+   outopt(x,0,mn[i]);
+   x:=x+textwidth(mn[i])+l;
+   End;
+ x:=g;
+ i:=d;
+repeat
+   c:=readkey;g:=0;
+   while keypressed do c:=readkey;
+     if c=#77 then begin g:=1;d:=l+textwidth(mn[i]) end
+else if c=#75 then begin g:=-1;d:=-l-textwidth(mn[i-1]) end
+   else if (c=#59)or(c=#60) then begin vmenu:=c;exit end
+   else d:=0;
+   i:=i+g;
+  if (i>=1)and(i<=7)and(d<>0) then
+  begin
+   x:=x+d;
+     setfillstyle(1,7);
+    bar(x-d-1,0,x-d+textwidth(mn[i-g])+1,k);
+    outopt(x-d,0,mn[i-g]);
+    setfillstyle(1,14);
+    bar(x-1,0,x+textwidth(mn[i])+1,k);
+    outopt(x,0,mn[i]);
+  end
+  else if d<>0 then i:=i-g;
+until (c=#13)or(c=' ');
+vmenu:=mn[i][1];
+End;{-----------------------}
+procedure cmenu;
+begin
+ setfillstyle(1,0);bar(0,0,getmaxx,textheight('l'));
+End;
+{___________________________________________________}
+Procedure Main(c:char);
+label 1,2,7;
+Begin
+ settextstyle(0,0,1);
+ setlinestyle(0,0,1);
+    setbkcolor(0);
+2: if c='0' then
+ Begin
+    b:='L';
+ cleardevice;
+ i:=1;
+    v:=false;
+ end else b:=c;
+repeat
+  if c='0'then b:=vmenu(b);
+if b='L'then rfail(i)
+else if b='N' then wfail
+else if b='Q' then begin closegraph;halt end
+else if (b='H')or(b=#59) then begin help;b:='H' end
+else if b='P' then if v then i:=88;
+if b=#60 then b:='R';
+c:='0';
+setbkcolor(0);cleardevice;
+until i=88;
+7:   setlinestyle(0,0,1);
+     cleardevice;
+     setcolor(9);
+     setwritemode(0);
+     y:=getmaxy div 20;
+     my:=getmaxy-y;
+     x:=(getmaxx div 16)*3;
+     mx:=x+10*getmaxx div 16;
+     dx:=(mx-x) div a.s;
+     dy:=(my-y) div a.s;
+     my:=my-(my-y) mod a.s;
+     mx:=mx-(mx-x) mod a.s;
+     x1:=x;y1:=y;
+     setcolor(10);
+     for k:=1 to a.s+1 do
+   begin
+       setlinestyle(0,0,1);
+       line (x,y1,mx,y1);
+       y1:=y1+dy;
+       setlinestyle(0,0,3);
+       line(x1,y,x1,my);
+       x1:=x1+dx
+   end;
+        dlx:=dx div 2;
+        dly:=dy div 2;
+        setcolor(15);n:=x+dlx;p:=y+dly;
+       setwritemode(xorput);
+        line(n,y,n,my);
+        setlinestyle(0,0,1);
+        line(x,p,mx,p);
+     settextstyle(0,0,2);
+       setcolor(9);
+   spel(a.nameelem,choise,a.quanchains,a.quanelem,q);
+       outtextxy(543,30,choise[1]);
+   pg:=mx-dlx; ug:=y+dly; p:=ug;
+   lg:=x+dlx; dg:=my-dly; n:=lg;
+  nambkor(a.s,ne);
+for j:=1 to sqr(a.s) do kort[j]:=0;
+ for i:=1 to q do
+begin
+        c:='0';
+   while (c<>#13)and(c<>' ') do
+     begin
+         settextstyle (0,0,2);
+          if i<>1
+           then
+             begin
+                 setcolor (0);
+                 outtextxy(540,30,choise[i-1]);
+                 outtextxy(543,30,choise[i-1])
+             end;
+                 setcolor (2);
+                 outtextxy(543,30,choise[i]);
+                 setcolor (4);
+                 outtextxy(540,30,choise[i]);
+           clb;
+           c:=readkey;
+          while keypressed do
+           c:=readkey;
+                if c=#77 then begin k:= dx;l:= 0  end
+           else if c=#75 then begin k:=-dx;l:= 0  end
+           else if c=#80 then begin k:=  0;l:= dy end
+           else if c=#72 then begin k:=  0;l:=-dy end
+           else if c=#60 then begin if i<>1 then displ(1,i-1,j,true)
+           ;goto 1 end
+           else if c=#59 then begin help;goto 1 end
+           else if c=#68 then begin b:=vmenu('P');cmenu;
+                                    if b='R'then if i<>1 then
+                                                 displ(1,i-1,j,true)else
+                                    else if (b='N')or(b='L')
+                                    then begin c:=b;goto 2 end
+                                    else if b='A' then goto 7
+                                    else if b='H' then help
+                                    else if b='Q' then begin
+                                          closegraph;halt end;
+                             goto 1
+                              End
+           else begin if f(n,p)=1 then c:=';';goto 1 end;
+              p:=p+l;
+              n:=n+k;
+         if (n<=pg) and (n>=lg) and (p>=ug) and (p<=dg)
+             then
+               begin
+                  setcolor(15);
+                  if k<>0 then
+                            begin
+                               setlinestyle(0,0,3);
+                               line(n-k,y,n-k,my);
+                               line(n,y,n,my)
+                            end
+                          else
+                            begin
+                               setlinestyle(0,0,1);
+                               line(x,p-l,mx,p-l);
+                               line(x,p,mx,p)
+                            end
+               end
+             else
+               begin
+                p:=p-l;
+                n:=n-k;
+               end;
+1:  end ;
+    kort[i]:=kr(n,p);
+    setfillstyle(1,1);
+    setcolor(15);
+    bar(n-dlx+2,p-dly+1,n+dlx-1,p+dly-1);
+    settextstyle(0,0,1);
+    outtextxy(n-textwidth(choise[i]) div 2,p-4,choise[i]);
+    setlinestyle(0,0,3);
+    line(n,p-dly+1,n,p+dly-1);
+    setlinestyle(0,0,1);
+    line(n-dlx+2,p,n+dlx-1,p);
+end;
+settextstyle(0,0,1);
+setfillstyle(1,0);
+bar(540,29,getmaxx,100);
+ setcolor(15);
+ setlinestyle(0,0,1);
+ line(x,p,mx,p);
+ setlinestyle(0,0,3);
+ line(n,y,n,my);
+ setcolor(14);
+ b:='P';
+repeat
+ c:=vmenu(b);
+  b:=c;
+  if (c='L')or(c='N') then begin b:=c;goto 2 end
+  else if c='A' then goto 7
+  else if (c='R')or(c=#60) then begin displ(1,i,j,false);b:='R' end
+  else if (c='H')or(c=#59) then begin help;b:='H' end
+  else if c='Q' then begin closegraph;halt end;
+until c='P';
+ cmenu;
+ bol:=true;
+End;
+{//////////////// THE END OF GRAPHIC ENTER \\\\\\\\\\\\\\\}
+Procedure br;
+Begin
+  setwritemode(0);
+ setlinestyle(0,0,1);
+ mx:=getmaxx-getmaxx div 10;
+ x1:=getmaxx-getmaxx div 7;
+ my:=getmaxy-5;
+ y1:=getmaxy div 20;
+ dg:=(my-y1)div(quankort*q);
+ if dg<0 then
+ y1:=my-quankort*q*dg;
+ if dg<1 then
+e:=round(1/(((my-y1) mod (quankort*q))/(quankort*q)))
+         else e:=0;
+if e=1 then e:=2;
+ setcolor(15);
+ for i:=1 to 5 do
+ rectangle (x1-i,y1-i,mx+i,my+i);
+ setfillstyle(11,10);
+ bar(x1+1,y1+1,mx-1,my-1);
+ line(mx+20,my,mx+20,y1-getmaxy div 30);
+Moveto(mx+20,y1-getmaxy div 30);
+linerel(3,5);linerel(-6,0);linerel(3,-5);
+  n:=0;lg:=0;stkr:='';
+k:=(my-y1) div 10;
+Moveto(mx+20,my);
+for i:=1 to 10 do
+Begin
+str(i,stkr);
+outtextxy(mx+30,my-i*k,stkr);
+Moveto(mx+20,my-i*k);
+linerel(7,0)
+End;
+  repeat until keypressed;
+End;
+procedure Control;
+begin
+    c:=readkey;
+    if c=#27 then begin
+               closegraph;
+               halt
+                  end;
+    if (c>=#97)and(c<=#122)then begin
+      setcolor(9);
+      outtextxy(1+textwidth('COMMAND: '+stkr),getmaxy-8,c);
+                               stkr:=stkr+c
+                               end
+    else if c=#13 then if stkr='stop' then
+                              begin CloseGraph; Halt end
+    else if c=#7 then  if stkr<>'' then
+              begin
+              setcolor(0);
+    outtextxy (
+    1+textwidth('COMMAND:'+stkr[length(stkr)-1]),
+            getmaxy-8,
+            stkr[length(stkr)]);
+             stkr:=stkr[length(stkr)-1];
+             end;
+             end;
+{---------------------------------------}
+Procedure outinfo;
+   begin
+      delay(10);
+        koord(kort[j],l,k);
+        bar(l-dlx+2,k-dly+1,l+dlx-2,k+dly-1);
+        if (my-dg*(j+n)>y1)and(my-lg>y1) then
+        if e<>0
+        then if (j+n) mod e =0
+                  then
+                  begin
+                    lg:=lg+1;
+                   bar(x1,my-lg,mx,my-lg+1)
+                  end
+                  else
+        else bar(x1,my-dg*(j+n),mx,my-(j+n-1)*dg);
+        outtextxy(l-textwidth(choise[j]) div 2,k-4,choise[j]);
+   end;
+{------------------------}
+procedure unarc(name:string);
+ var f:file;
+     p:array[1..4]of integer;
+     cf,i,cr:byte;
+ begin
+{    setvisualpage(1);}
+    assign(f,name);
+    reset(f,1);
+    blockread(f,cf,1);
+    setbkcolor(cf);
+    blockread(f,cr,1);
+    setfillstyle(1,cr);
+    repeat
+     blockread(f,p,8);
+     if p[1]=1000 then
+                   begin
+                   blockread(f,cr,1);
+                   setfillstyle(1,cr);
+                   end
+                  else begin
+     p[1]:=p[1]+getmaxx div 5;
+     p[2]:=p[2]+getmaxy div 2;
+     p[3]:=p[3]+getmaxx div 5;
+     p[4]:=p[4]+getmaxy div 2;
+                  bar(p[1],p[2],p[3],p[4])
+                       end;
+    until (filepos(f)>=filesize(f)-2);
+    close(f);
+    setfillstyle(1,7);
+    x:=getmaxx div 10; y:=getmaxy div 10;
+    mx:=9*getmaxx div 10;my:=getmaxy div 2;
+    dx:=getmaxx div 20;dy:=getmaxy div 17;
+    bar(x,y,mx,my);
+    settextstyle(0,0,8); setcolor(12);
+    outtextxy(getmaxx div 6,getmaxy div 6,'PLACING');
+   { moveto(x,y)
+    randomise;
+    for i:=1 to 30 do linerel(  }
+    setcolor(11);
+    moveto(x,y);lineto(x-dx,y-dy);
+    lineto(x-dx,my+dy);lineto(x,my);lineto(x,y);
+    moveto(x-dx,y-dy);lineto(mx+dx,y-dy);
+    lineto(mx,y);lineto(x,y);moveto(mx,y);
+    lineto(mx,my);lineto(mx+dx,my+dy);
+    lineto(mx+dx,y-dy);moveto(mx,my);
+    lineto(x,my);moveto(x-dx,my+dy);
+    lineto(mx+dx,my+dy);
+    setfillstyle(1,9);
+    floodfill(x-2,y,11);floodfill(x,y-2,11);
+    setfillstyle(1,1);
+    floodfill(mx,my+2,11);floodfill(mx+2,my,11);
+
+{    setvisualpage(0);}
+ end;{^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^(anarhview)^^^}
